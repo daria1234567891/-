@@ -1,3 +1,19 @@
 class LittleBell:
     def sound(self):
         print("ding")
+
+Задание 2
+class Button:
+def_init_(self):
+  self.clicks = 0
+
+def click(self):
+  self.clicks += 1
+
+def click_count(self):
+  return self.clicks
+
+def reset(self):
+  self.clicks = 0
+
+Задание 3
