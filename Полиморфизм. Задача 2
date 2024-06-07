@@ -1,0 +1,51 @@
+class LeftParagraph:
+    def __init__(self, width):
+        self.width = width
+        self.words = []
+
+    def add_word(self, word):
+        if len(' '.join(self.words + [word])) <= self.width:
+            self.words.append(word)
+        else:
+            self.end()
+            self.words.append(word)
+
+    def end(self):
+        print(' '.join(self.words))
+        self.words = []
+
+
+class RightParagraph:
+    def __init__(self, width):
+        self.width = width
+        self.words = []
+
+    def add_word(self, word):
+        if len(' '.join(self.words + [word])) <= self.width:
+            self.words.append(word)
+        else:
+            self.end()
+            self.words.append(word)
+
+    def end(self):
+        spaces = ' ' * (self.width - sum(len(word) for word in self.words))
+        print(spaces + ' '.join(self.words))
+        self.words = []
+
+left_para = LeftParagraph(20)
+right_para = RightParagraph(20)
+
+left_para.add_word("Lorem")
+left_para.add_word("ipsum")
+left_para.add_word("dolor")
+left_para.add_word("sit")
+left_para.add_word("amet,")
+
+right_para.add_word("consectetur")
+right_para.add_word("adipiscing")
+right_para.add_word("elit.")
+right_para.add_word("Sed")
+right_para.add_word("do")
+
+left_para.end()
+right_para.end()
