@@ -1,0 +1,226 @@
+from enum import Enum
+
+from typing import Union
+
+class Color(Enum):
+    BLACK = 0
+    WHITE = 1
+class Board:
+    def __init__(self):
+        self.__field = []
+        self.__color = Color.WHITE
+        for _ in range(8):
+            self.__field.append([None] * 8)
+        self.__fill()
+
+    def __fill(self):
+        for col in range(8):
+            self.__field[1][col] = Pawn(Color.WHITE)
+            self.__field[6][col] = Pawn(Color.BLACK)
+        for col in [1, 6]:
+            self.__field[0][col] = Knight(Color.WHITE)
+            self.__field[7][col] = Knight(Color.BLACK)
+        for col in [2, 5]:
+            self.__field[0][col] = Bishop(Color.WHITE)
+            self.__field[7][col] = Bishop(Color.BLACK)
+        for col in [0, 7]:
+            self.__field[0][col] = Rook(Color.WHITE)
+            self.__field[7][col] = Rook(Color.BLACK)
+        for col in [3]:
+            self.__field[0][col] = Queen(Color.WHITE)
+            self.__field[7][col] = Queen(Color.BLACK)
+        for col in [4]:
+            self.__field[0][col] = King(Color.WHITE)
+            self.__field[7][col] = King(Color.BLACK)
+
+    @property
+    def current_player(self):
+        return self.__color
+
+    @property
+    def field(self):
+        return tuple([tuple(row) for row in self.__field])
+
+    @staticmethod
+    def __validate_coord(row: int, col: int) -> bool:
+        return 1 <= row <= 9 and 1 <= col <= 9
+    def get_piece(self, row: int, col: int):
+        if self.__validate_coord(row, col):
+            return self.field[row - 1][col - 1]
+        return None
+    def move_piece(self, row: int, col: int, row_1: int, col_1: int) -> bool:
+        piece = self.get_piece(row, col)
+        if piece is None:
+            return False
+        if piece.color != self.current_player:
+            return False
+        if not self.__validate_coord(row_1, col_1):
+            return False
+        if self.get_piece(row_1, col_1) is None:
+            if not piece.can_move(self, row, col, row_1, col_1):
+                return False
+        elif self.get_piece(row_1, col_1).color != self.current_player:
+            if not piece.can_attack(self, row, col, row_1, col_1):
+                return False
+        else:
+            return False
+        self.__field[row - 1][col - 1] = None
+        self.__field[row_1 - 1][col_1 - 1] = piece
+        self.__color = Color.WHITE if self.__color == Color.BLACK else Color.BLACK
+        return True
+from abc import ABCMeta, abstractmethod
+
+class Piece:
+    def __init__(self, color):
+        self.__color = color
+
+    @property
+    def color(self):
+        return self.__color
+
+    @abstractmethod
+    def char(self):
+        pass
+    def __str__(self):
+        c = 'w' if self.color == Color.WHITE else 'b'
+        return f'{c}{self.char()}'
+    @abstractmethod
+    def can_move(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        pass
+    @abstractmethod
+    def can_attack(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        pass
+class Pawn(Piece):
+    def char(self):
+        return 'P'
+    def can_move(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        if col != col_1:
+            return False
+        if self.color == Color.WHITE:
+            start_row = 2
+            direction = 1
+        else:
+            start_row = 7
+            direction = -1
+        if row + direction == row_1:
+            return True
+        if row == start_row \
+                and row + 2 * direction == row_1 \
+                and board.get_piece(row + direction, col) is None:
+            return True
+        return False
+    def can_attack(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        if self.color == Color.WHITE:
+            direction = 1
+        else:
+            direction = -1
+        return row + direction == row_1 and abs(col - col_1) == 1
+class Knight(Piece):
+    def char(self):
+        return 'N'
+    def can_move(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        diff_row = abs(row - row_1)
+        diff_col = abs(col - col_1)
+        return diff_row == 2 and diff_col == 1 or\
+            diff_row == 1 and diff_col == 2
+    def can_attack(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        return self.can_move(board, row, col, row_1, col_1)
+
+class Rook(Piece):
+    def char(self):
+        return 'R'
+    def can_move(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        return row == row_1 or col == col_1
+
+    def can_attack(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        return self.can_move(board, row, col, row_1, col_1)
+
+
+class Bishop(Piece):
+    def char(self):
+        return 'B'
+    def can_move(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        return abs(row - row_1) == abs(col - col_1)
+
+    def can_attack(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        return self.can_move(board, row, col, row_1, col_1)
+
+
+class Queen(Piece):
+    def char(self):
+        return 'Q'
+    def can_move(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        return row == row_1 or col == col_1 or abs(row - row_1) == abs(col - col_1)
+
+    def can_attack(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        return self.can_move(board, row, col, row_1, col_1)
+
+
+class King(Piece):
+    def char(self):
+        return 'K'
+    def can_move(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        return abs(row - row_1) <= 1 and abs(col - col_1) <= 1
+    def can_attack(self, board, row: int, col: int, row_1: int, col_1: int) -> bool:
+        return self.can_move(board, row, col, row_1, col_1)
+
+def print_board(board: Board):
+    print('   +' + '----+' * 8)
+    for row in range(8, 0, -1):
+        print(f' {row} ', end='')
+        for col in range(1, 9):
+            print('| ', end='')
+            piece = board.get_piece(row, col)
+            if piece is None:
+                print('  ', end='')
+            else:
+                print(piece, end='')
+            print(' ', end='')
+        print('|')
+        print('   +' + '----+' * 8)
+    print('    ', end='')
+    for col in range(8):
+        print(f' {chr(65 + col)}   ', end='')
+    print()
+
+
+def convert_step(step: str) -> Union[tuple, Exception]:
+    if len(step) != 2:
+        raise Exception('Неверный формат хода')
+    s, n = step[0], step[1]
+    if ord(s) < ord('A') or ord(s) > ord('H'):
+        raise Exception('Неверный формат столбца')
+    if ord(n) < ord('1') or ord(n) > ord('8'):
+        raise Exception('Неверный формат строки')
+    return int(n), ord(s) - ord('A') + 1
+def main():
+    board = Board()
+    while True:
+        print_board(board)
+        print('Команды:')
+        print('    exit                --выход')
+        print('    move <from> <to>    --ход из клетки <from> в клетку <to>')
+        if board.current_player == Color.WHITE:
+            print('Ход белых')
+        else:
+            print('Ход черных')
+        command = input('Введите команду: ')
+        if command == 'exit':
+            break
+        command = command.split()
+        if len(command) == 3 and command[0] == 'move':
+            try:
+                row, col = convert_step(command[1])
+                row_1, col_1 = convert_step(command[2])
+                if board.move_piece(row, col, row_1, col_1):
+                    print('Ход успешен')
+                else:
+                    print('Неверные координаты. Попробуйте другой ход')
+            except Exception as err:
+                print('Ошибка:', err)
+            finally:
+                continue
+        print('Неверная команда. Повторите снова')
+
+
+main()
